@@ -5,6 +5,8 @@ No OpenAI API key required - simply sign in with you Github Copilot-enabled acco
 
 ## Installation
 ```
+git clone https://github.com/B00TK1D/sideqiq
+cd sideqiq
 pip install .
 ```
 
