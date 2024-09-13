@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.spinner import Spinner
 import os
+import sys
 import subprocess
 import readline
 
@@ -15,8 +16,9 @@ MODEL = 'gpt-4o'
 token = None
 messages = []
 console = Console()
-
 client_id = 'Iv1.b507a08c87ecfe98'
+
+access_token_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.copilot_token')
 
 def setup():
     resp = requests.post('https://github.com/login/device/code', headers={
@@ -58,7 +60,7 @@ def setup():
             break
 
     # Save the access token to a file
-    with open('.copilot_token', 'w') as f:
+    with open(access_token_path, 'w') as f:
         f.write(access_token)
 
     print('Authentication success!')
@@ -69,7 +71,7 @@ def get_token():
         # Check if the .copilot_token file exists
     while True:
         try:
-            with open('.copilot_token', 'r') as f:
+            with open(access_token_path, 'r') as f:
                 access_token = f.read()
                 break
         except FileNotFoundError:
@@ -143,7 +145,7 @@ def main():
             # Clear the terminal
             console.clear()
             continue
-        if user.startswith('open'):
+        if user.startswith('load '):
             try:
                 filename = ' '.join(user.split()[1:])
                 if not filename:
@@ -159,7 +161,7 @@ def main():
             except FileNotFoundError:
                 print('File not found')
                 continue
-        if user.startswith('save'):
+        if user.startswith('save '):
             # Find the largest code block from the last response and save it to a file
             filename = ' '.join(user.split()[1:])
             if not filename:
@@ -178,7 +180,7 @@ def main():
             else:
                 print('No code to save')
             continue
-        if user.startswith('shell'):
+        if user.startswith('sh '):
             # Run a shell command, and save the output to the messages
             command = ' '.join(user.split()[1:])
             result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -224,9 +226,9 @@ def main():
             continue
         if user == "help":
             print("Special commands:")
-            print("    open <filename>: Open a file and use it for future reference")
+            print("    load <filename>: Load a file and use it for future reference")
             print("    save <filename>: Save the last code block to a file")
-            print("    shell <command>: Run a shell command (saves the output for future reference)")
+            print("    sh <command>: Run a shell command (saves the output for future reference)")
             print("    run: Run the code from the last response")
             print("    clear: Clear the terminal and forget all previous messages")
             print("    exit: Exit chat")

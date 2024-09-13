@@ -15,9 +15,9 @@ pip install -r requirements.txt
 python3 chat.py
 ~> help
 Special commands:
-    open <filename>: Open a file and use it for future reference
+    load <filename>: Open a file and use it for future reference
     save <filename>: Save the last code block to a file
-    shell <command>: Run a shell command (saves the output for future reference)
+    sh <command>: Run a shell command (saves the output for future reference)
     run: Run the code from the last response
     clear: Clear the terminal and forget all previous messages
     exit: Exit chat
