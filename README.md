@@ -1,18 +1,16 @@
-# qiq
-
-__As in sidekick__
+# sideqiq
 
 A terminal chat powered by GPT-4o, requiring only a copilot subscription, with a few nice terminal features.
 No OpenAI API key required - simply sign in with you Github Copilot-enabled account
 
 ## Installation
 ```
-pip install -r requirements.txt
+pip install .
 ```
 
 ## Usage
 ```
-python3 chat.py
+qiq
 ~> help
 Special commands:
     load <filename>: Open a file and use it for future reference
