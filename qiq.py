@@ -115,19 +115,23 @@ def chat(message):
                     'messages': messages
                 })
         except requests.exceptions.ConnectionError:
-            return ''
+            return
 
-        try:
-            result = resp.json()['choices'][0]['message']['content']
-        except:
-            print(resp.status_code)
-            print(resp.text)
-            return ''
+    if resp.status_code == 401:
+        get_token()
+        return chat(message)
 
-        messages.append({
-            "content": result,
-            "role": "assistant"
-        })
+    try:
+        result = resp.json()['choices'][0]['message']['content']
+    except:
+        print(resp.status_code)
+        print(resp.text)
+        return ''
+
+    messages.append({
+        "content": result,
+        "role": "assistant"
+    })
 
     console.print(Markdown(result))
 
