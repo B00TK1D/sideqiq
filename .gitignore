@@ -1,3 +1,4 @@
 .copilot_token
 build/
 sideqiq.egg-info/
+commands.json
