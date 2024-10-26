@@ -10,7 +10,8 @@ import sys
 import subprocess
 import readline
 
-MODEL = 'o1-preview'
+#MODEL = 'o1-preview'
+MODEL = 'gpt-4o'
 
 token = None
 messages = []
