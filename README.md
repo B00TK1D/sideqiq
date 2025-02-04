@@ -19,6 +19,7 @@ Special commands:
     save <filename>: Save the last code block to a file
     sh <command>: Run a shell command (saves the output for future reference)
     run: Run the code from the last response
+    open: Open the code from the last response (in Neovim)
     clear: Clear the terminal and forget all previous messages
     exit: Exit chat
 ```

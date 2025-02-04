@@ -271,6 +271,7 @@ def main():
             print("    save <filename>: Save the last code block to a file")
             print("    sh <command>: Run a shell command (saves the output for future reference)")
             print("    run: Run the code from the last response")
+            print("    open: Open the code from the last response (in Neovim)")
             print("    clear: Clear the terminal and forget all previous messages")
             print("    exit: Exit chat")
             print("    add <commandname> <commandprompt>: Add a custom command")
