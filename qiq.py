@@ -190,6 +190,37 @@ def main():
                 print('No code to save')
             continue
 
+        if user == 'open':
+            # Open a file
+            code_blocks = []
+            for message in messages[::-1]:
+                if message['role'] == 'assistant':
+                    code_blocks.extend((block.group(1), block.group(2)) for block in re.finditer(r'\n```(\w*)\n(.*?)```', message['content'], re.DOTALL))
+                if code_blocks:
+                    break
+            if code_blocks:
+                code_block = max(code_blocks, key=lambda x: len(x[1]))
+                extension = code_block[0]
+                if code_block[0] == 'python':
+                    extension = '.py'
+                elif code_block[0] == 'javascript':
+                    extension = '.js'
+                elif code_block[0] == 'typescript':
+                    extension = '.ts'
+                elif code_block[0] == 'shell':
+                    extension = '.sh'
+                elif code_block[0] == 'plaintext':
+                    extension = '.txt'
+                elif code_block[0] == 'markdown':
+                    extension = '.md'
+                with open(f'.code{extension}', 'w') as f:
+                    f.write(code_block[1])
+                os.system(f'nvim .code{extension}')
+                os.remove(f'.code{extension}')
+            else:
+                print('No code to open')
+            continue
+
         if user.startswith('sh '):
             command = ' '.join(user.split()[1:])
             result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

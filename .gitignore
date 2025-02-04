@@ -2,3 +2,4 @@
 build/
 sideqiq.egg-info/
 commands.json
+.env
