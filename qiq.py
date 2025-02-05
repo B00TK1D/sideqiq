@@ -9,8 +9,17 @@ import os
 import sys
 import subprocess
 import readline
+from sqlitedict import SqliteDict
+from prompt_toolkit import prompt
+from prompt_toolkit import PromptSession
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.styles import Style
+from difflib import get_close_matches
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.completion import Completer, Completion
 
-#MODEL = 'o1-preview'
+
+#MODEL = 'o1'
 MODEL = 'gpt-4o'
 
 token = None
@@ -20,6 +29,33 @@ client_id = 'Iv1.b507a08c87ecfe98'
 
 access_token_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.copilot_token')
 commands_json_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'commands.json')
+
+if os.path.exists('.qiq_history'):
+    readline.read_history_file('.qiq_history')
+
+resp_cache = SqliteDict('.qiq_cache.sqlite', autocommit=True)
+
+session = PromptSession()
+prompt_style = Style.from_dict({
+    'prompt': 'ansipurple',
+    '': 'ansiyellow',
+})
+
+class HistoryCompleter(Completer):
+    def __init__(self, history):
+        self.history = history
+
+    def get_completions(self, document, complete_event):
+        text = document.text_before_cursor
+        if text:
+            matches = get_close_matches(text, self.history, n=1, cutoff=0.1)
+            if matches:
+                match = matches[0]
+                yield Completion(match, start_position=-len(text))
+
+
+completer = HistoryCompleter(list(resp_cache.keys()))
+
 
 def setup():
     global console
@@ -121,6 +157,11 @@ def chat(message):
         print(resp.text)
         return ''
 
+    if len(messages) == 1:
+        resp_cache[message] = result
+
+    completer.history.append(message)
+
     messages.append({
         "content": result,
         "role": "assistant"
@@ -143,8 +184,23 @@ def main():
     get_token()
     commands = load_commands()
 
+    session_prompt = [
+        ('class:prompt', '~> '),
+    ]
+
     while True:
-        user = input('\33[35m~> \33[33m')
+        #user = input('\33[35m~> \33[33m')
+        try:
+            user = session.prompt(
+                session_prompt,
+                style=prompt_style,
+                completer=completer,
+                complete_while_typing=True,
+            )
+        except KeyboardInterrupt:
+            print("Exiting...")
+            return
+
         print('\033[0m', end='', flush=True)
         if user == 'exit':
             break
@@ -153,6 +209,24 @@ def main():
             messages = []
             console.clear()
             continue
+
+        if user == 'edit':
+            # Edit the last message
+            for message in messages:
+                if message['role'] == 'user':
+                    with open('.tmp.prompt', 'w') as f:
+                        f.write(message['content'])
+                    os.system('nvim .tmp.prompt')
+                    messages = messages[:-2]
+                    with open('.tmp.prompt', 'r') as f:
+                        user = f.read()
+                    os.remove('.tmp.prompt')
+                    break
+            else:
+                os.system('nvim .tmp.prompt')
+                with open('.tmp.prompt', 'r') as f:
+                    user = f.read()
+                os.remove('.tmp.prompt')
 
         if user.startswith('load '):
             try:
@@ -198,27 +272,26 @@ def main():
                     code_blocks.extend((block.group(1), block.group(2)) for block in re.finditer(r'\n```(\w*)\n(.*?)```', message['content'], re.DOTALL))
                 if code_blocks:
                     break
-            if code_blocks:
-                code_block = max(code_blocks, key=lambda x: len(x[1]))
-                extension = code_block[0]
-                if code_block[0] == 'python':
-                    extension = '.py'
-                elif code_block[0] == 'javascript':
-                    extension = '.js'
-                elif code_block[0] == 'typescript':
-                    extension = '.ts'
-                elif code_block[0] == 'shell':
-                    extension = '.sh'
-                elif code_block[0] == 'plaintext':
-                    extension = '.txt'
-                elif code_block[0] == 'markdown':
-                    extension = '.md'
-                with open(f'.code{extension}', 'w') as f:
-                    f.write(code_block[1])
-                os.system(f'nvim .code{extension}')
-                os.remove(f'.code{extension}')
-            else:
-                print('No code to open')
+            if not code_blocks:
+                code_blocks = [('markdown', messages[-1]['content'])]
+            code_block = max(code_blocks, key=lambda x: len(x[1]))
+            extension = code_block[0]
+            if code_block[0] == 'python':
+                extension = 'py'
+            elif code_block[0] == 'javascript':
+                extension = 'js'
+            elif code_block[0] == 'typescript':
+                extension = 'ts'
+            elif code_block[0] == 'shell':
+                extension = 'sh'
+            elif code_block[0] == 'plaintext':
+                extension = 'txt'
+            elif code_block[0] == 'markdown':
+                extension = 'md'
+            with open(f'.code.{extension}', 'w') as f:
+                f.write(code_block[1])
+            os.system(f'nvim .code.{extension}')
+            os.remove(f'.code.{extension}')
             continue
 
         if user.startswith('sh '):
@@ -289,6 +362,20 @@ def main():
             print(f"Command '{command_name}' added.")
             continue
 
+        readline.write_history_file('.qiq_history')
+
+        if user in resp_cache:
+            messages.append({
+                "content": user,
+                "role": "user"
+            })
+            messages.append({
+                "content": resp_cache[user],
+                "role": "assistant"
+            })
+            console.print(Markdown(resp_cache[user]))
+            continue
+
         if user in commands:
             chat(commands[user])
             continue
@@ -296,4 +383,9 @@ def main():
         chat(user)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Exiting...")
+        sys.exit(0)
+
