@@ -8,7 +8,7 @@ from rich.spinner import Spinner
 import os
 import sys
 import subprocess
-import readline
+import gnureadline as readline
 from sqlitedict import SqliteDict
 from prompt_toolkit import prompt
 from prompt_toolkit import PromptSession
@@ -29,11 +29,16 @@ client_id = 'Iv1.b507a08c87ecfe98'
 
 access_token_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.copilot_token')
 commands_json_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'commands.json')
+history_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.qiq_history')
+cache_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.qiq_cache.sqlite')
 
-if os.path.exists('.qiq_history'):
-    readline.read_history_file('.qiq_history')
+if not os.path.exists(history_path):
+    with open(history_path, 'w') as f:
+        f.write('_HiStOrY_V2_\n')
 
-resp_cache = SqliteDict('.qiq_cache.sqlite', autocommit=True)
+readline.read_history_file(str(history_path))
+
+resp_cache = SqliteDict(cache_path, autocommit=True)
 
 session = PromptSession()
 prompt_style = Style.from_dict({
@@ -48,7 +53,7 @@ class HistoryCompleter(Completer):
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
         if text:
-            matches = get_close_matches(text, self.history, n=1, cutoff=0.1)
+            matches = get_close_matches(text, self.history, n=1, cutoff=0.5)
             if matches:
                 match = matches[0]
                 yield Completion(match, start_position=-len(text))
@@ -351,6 +356,11 @@ def main():
             print()
             continue
 
+        if user == "logout":
+            os.remove(access_token_path)
+            print("Logged out.")
+            continue
+
         if user.startswith('add '):
             parts = user.split(' ', 2)
             if len(parts) < 3:
@@ -362,7 +372,7 @@ def main():
             print(f"Command '{command_name}' added.")
             continue
 
-        readline.write_history_file('.qiq_history')
+        readline.write_history_file(str(history_path))
 
         if user in resp_cache:
             messages.append({

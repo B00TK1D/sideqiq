@@ -1,3 +1,4 @@
 rich
 sqlitedict
 prompt_toolkit
+gnureadline
